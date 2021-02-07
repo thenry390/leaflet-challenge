@@ -43,34 +43,43 @@ d3.json(queryUrl, function (data) {
   for (var i = 0; i < data.features.length; i++) {
     let d = data.features[i];
     
-    var latlng = L.latLng(d.geometry.coordinates);
-    var magnitude = d.properties.mag;
-    var depth = d.geometry.coordinates[2];
+    var magnitude = d.properties.mag * 1; //ensure number
+    var depth = d.geometry.coordinates[2] * 1;//ensure number
     
-    var marker = L.circleMarker(latlng, {
-       radius: 10,
-       fillOpacity: depth,
-       title: d.properties.title,
-       radius: magnitude 
-    }).addTo(myMap)
-
     // Conditionals for countries points
-    // var color = "";
-    // if (countries[i].points > 200) {
-    //   color = "yellow";
-    // }
-    // else if (countries[i].points > 100) {
-    //   color = "blue";
-    // }
-    // else if (countries[i].points > 90) {
-    //   color = "green";
-    // }
-    // else {
-    // }
+    var color = "";
+    if (depth < 10) {
+        color = "#00ff00";
+    }
+    else if (depth >= 10 && depth < 30) {
+        color = "#ccff99";
+    }
+    else if (depth >= 30 && depth < 50) {
+        color = "#ffff00";
+    }
+    else if (depth >= 50 && depth < 70) {
+        color = "##ffcc99";
+    }
+    else if (depth >= 70 && depth < 90) {
+        color = "###ff6600";
+    }
+    else {
+        color = "#cc0000";
+    }
     //console.log("magnitude: ",magnitude);
     //console.log("depth: ", depth)
+    //var latlng = L.latLng(d.geometry.coordinates);
+    var lat = d.geometry.coordinates[0]*1;
+    var lng = d.geometry.coordinates[1]*1;
+    var latlng = L.latLng([lng, lat]);
+    //console.log("latlng: ", latlng);
 
-
+    var marker = L.circleMarker(latlng, {
+    //  fillOpacity: 1,
+      title: d.properties.title,
+      radius: magnitude * 2,
+      color: color
+    }).addTo(myMap)
     // Add circles to map
   //   L.circleMarker(latlng, {
   //     fillOpacity: depth,
@@ -117,4 +126,43 @@ d3.json(queryUrl, function (data) {
   //       };
   //     });
   //   }
+  function getColor(a) {
+    return a === '-10-10'  ? "#00ff00" :
+           a === '10-30'  ? "#ccff99" :
+           a === '30-50' ? "#ffff00" :
+           a === '50-70' ? "#ffcc99" :
+           a === '70-90' ? "#ff6600" :
+           a === '90+' ?  "#cc0000" :
+           "#cc0000";
+  }
+function style(feature) {
+    return {
+        weight: 1.5,
+        opacity: 1,
+        fillOpacity: 1,
+        radius: 6,
+        fillColor: getColor(feature.properties.TypeOfIssue),
+        color: "grey"
+
+    };
+}
+  var legend = L.control({position: 'bottomright'});
+    legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'info legend');
+    labels = ['<strong> </strong>'],
+    categories = ['-10-10','10-30','30-50','50-70','70-90','90+'];
+
+    for (var i = 0; i < categories.length; i++) {
+
+            div.innerHTML += 
+            labels.push(
+                '<i class="circle" style="background:' + getColor(categories[i]) + '"></i> ' +
+            (categories[i] ? categories[i] : '+'));
+
+        }
+        div.innerHTML = labels.join('<br>');
+    return div;
+    };
+    legend.addTo(myMap);
 });
