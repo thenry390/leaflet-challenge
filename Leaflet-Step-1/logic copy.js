@@ -3,6 +3,20 @@ var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_da
 
 d3.json(queryUrl, function (data) {
   
+  // function onEachFeature(feature, layer) {
+  //   // layer.bindPopup("<h3>Place: " + feature.properties.place +
+  //   //   "</h3><hr><p>Date: " + new Date(feature.properties.time) + 
+  //   //   "</p><p> Magnitude: " + feature.properties.mag + "</p>"+
+  //   //   "</p><p> Latitude: " + feature.geometry.coordinates[0] + "</p>"+
+  //   //   "</p><p> Longitude: " + feature.geometry.coordinates[1] + "</p>"+
+  //   //   "</p><p> Depth: " + feature.geometry.coordinates[2] + "</p>");
+  // }
+
+  // var earthquakes = L.geoJSON(data, {
+  //   onEachFeature: onEachFeature
+
+  // });
+
   var streetmap = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
     attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
     tileSize: 512,
@@ -18,6 +32,7 @@ d3.json(queryUrl, function (data) {
     zoom: 3,
     clickableIcons: false,
     layers: [streetmap, ]
+    //layers: [streetmap, earthquakes]
   });
 
   // loop through the JSON and create markers for all circuits
