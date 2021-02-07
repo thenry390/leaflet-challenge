@@ -1,46 +1,22 @@
 // Store our API endpoint inside queryUrl
 var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"
-console.log("logic.js");
-// Perform a GET request to the query URL
-d3.json(queryUrl, function(data) {
-  // Once we get a response, send the data.features object to the createFeatures function
 
- function update() {
-  feature.attr("transform", 
-  function(d) { 
-      return "translate("+ 
-   map.latLngToLayerPoint(d.LatLng).x +","+ 
-   map.latLngToLayerPoint(d.LatLng).y +")";
-      }
-  )
- }
- 
-  createFeatures(data.features);
+d3.json(queryUrl, function (data) {
   
-});
-
-function createFeatures(earthquakeData) {
-
-  // Define a function we want to run once for each feature in the features array
-  // Give each feature a popup describing the place and time of the earthquake
   function onEachFeature(feature, layer) {
-    layer.bindPopup("<h3>" + feature.properties.place +
-      "</h3><hr><p>" + new Date(feature.properties.time) + "</p>");
+    layer.bindPopup("<h3>Place: " + feature.properties.place +
+      "</h3><hr><p>Date: " + new Date(feature.properties.time) + 
+      "</p><p> Magnitude: " + feature.properties.mag + "</p>"+
+      "</p><p> Latitude: " + feature.geometry.coordinates[0] + "</p>"+
+      "</p><p> Longitude: " + feature.geometry.coordinates[1] + "</p>"+
+      "</p><p> Depth: " + feature.geometry.coordinates[2] + "</p>");
   }
 
-  // Create a GeoJSON layer containing the features array on the earthquakeData object
-  // Run the onEachFeature function once for each piece of data in the array
-  var earthquakes = L.geoJSON(earthquakeData, {
+  var circuits = L.geoJSON(data, {
     onEachFeature: onEachFeature
+
   });
 
-  // Sending our earthquakes layer to the createMap function
-  createMap(earthquakes);
-}
-
-function createMap(earthquakes) {
-
-  // Define streetmap and darkmap layers
   var streetmap = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
     attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
     tileSize: 512,
@@ -49,55 +25,95 @@ function createMap(earthquakes) {
     id: "mapbox/streets-v11",
     accessToken: API_KEY
   });
-
-  var darkmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
-    attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
-    maxZoom: 18,
-    id: "dark-v10",
-    accessToken: API_KEY
-  });
-
-  // Define a baseMaps object to hold our base layers
-  var baseMaps = {
-    "Street Map": streetmap,
-    "Dark Map": darkmap
-  };
-
-  // Create overlay object to hold our overlay layer
-  var overlayMaps = {
-    Earthquakes: earthquakes
-  };
-
-  // Create our map, giving it the streetmap and earthquakes layers to display on load
   var myMap = L.map("map", {
     center: [
       37.09, -95.71
     ],
     zoom: 2.5,
-    layers: [streetmap, earthquakes]
+    layers: [streetmap, circuits]
   });
 
-  // Create a layer control
-  // Pass in our baseMaps and overlayMaps
-  // Add the layer control to the map
-//   L.control.layers(baseMaps, overlayMaps, {
-//     collapsed: false
-//   }).addTo(myMap);
+  // loop through the JSON and create markers for all circuits
 
-//   var geojsonMarkerOptions = {
-//     radius: 8,
-//     fillColor: "#ff7800",
-//     color: "#000",
-//     weight: 1,
-//     opacity: 1,
-//     fillOpacity: 0.8
-// };
+  for (var i = 0; i < data.features.length; i++) {
+    let d = data.features[i];
+    
+    var magnitude = d.properties.mag * 1; //ensure number
+    var depth = d.geometry.coordinates[2] * 1;//ensure number
+    
+    // Conditionals for countries points
+    var color = "";
+    if (depth < 10) {
+        color = "#00ff00";
+    }
+    else if (depth >= 10 && depth < 30) {
+        color = "#ccff99";
+    }
+    else if (depth >= 30 && depth < 50) {
+        color = "#ffff00";
+    }
+    else if (depth >= 50 && depth < 70) {
+        color = "##ffcc99";
+    }
+    else if (depth >= 70 && depth < 90) {
+        color = "###ff6600";
+    }
+    else {
+        color = "#cc0000";
+    }
+    var latlng = L.latLng(d.geometry.coordinates);
+    var lat = d.geometry.coordinates[0]*1;
+    var lng = d.geometry.coordinates[1]*1;
+    var latlng = L.latLng([lng, lat]);
+    //console.log("latlng: ", latlng);
 
-// L.geoJSON(someGeojsonFeature, {
-//     pointToLayer: function (feature, latlng) {
-//         return L.circleMarker(latlng, geojsonMarkerOptions);
-//     }
-// }).addTo(myMap);
+    var marker = L.circleMarker(latlng, {
+      fillOpacity: 1,
+      title: d.properties.title,
+      radius: magnitude * 5,
+      color: color
+    }).addTo(myMap)
+  }
 
-  //L.circle([50.5, 30.5], {radius: 200}).addTo(map);
-}
+  function getColor(a) {
+    return a === '-10-10'  ? "#00ff00" :
+           a === '10-30'  ? "#ccff99" :
+           a === '30-50' ? "#ffff00" :
+           a === '50-70' ? "#ffcc99" :
+           a === '70-90' ? "#ff6600" :
+           a === '90+' ?  "#cc0000" :
+           "#cc0000";
+  }
+
+  function style(feature) {
+      return {
+          weight: 1.5,
+          opacity: 1,
+          fillOpacity: 1,
+          radius: 6,
+          fillColor: getColor(feature.properties.TypeOfIssue),
+          color: "grey"
+
+      };
+  }
+
+  var legend = L.control({position: 'bottomright'});
+    legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'info legend');
+    labels = ['<strong> </strong>'],
+    categories = ['-10-10','10-30','30-50','50-70','70-90','90+'];
+
+    for (var i = 0; i < categories.length; i++) {
+
+            div.innerHTML += 
+            labels.push(
+                '<i class="circle" style="background:' + getColor(categories[i]) + '"></i> ' +
+            (categories[i] ? categories[i] : '+'));
+
+        }
+        div.innerHTML = labels.join('<br>');
+    return div;
+    };
+    legend.addTo(myMap);
+});
